@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+
+{% block content %}
+<div class="search-container">
+    <h1>Find a Game</h1>
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search for a video game..." autocomplete="off" autofocus>
+        <div class="search-spinner" id="searchSpinner"></div>
+    </div>
+
+    <div id="searchResults" class="search-results"></div>
+</div>
+
+<!-- Rating Modal -->
+<div id="ratingModal" class="modal-overlay" style="display:none">
+    <div class="modal-card">
+        <button class="modal-close" onclick="closeModal()">×</button>
+        <div class="modal-game-info">
+            <img id="modalCover" src="" alt="" class="modal-cover">
+            <div>
+                <h2 id="modalTitle"></h2>
+                <p id="modalMeta" class="modal-meta"></p>
+                <p id="modalSummary" class="modal-summary"></p>
+            </div>
+        </div>
+        <h3 class="rate-prompt">How do you feel about this game?</h3>
+        <div class="rating-buttons">
+            <button class="rate-btn rate-like" onclick="rateGame('like')">
+                <span class="rate-emoji">🔥</span>
+                <span>Like</span>
+            </button>
+            <button class="rate-btn rate-neutral" onclick="rateGame('neutral')">
+                <span class="rate-emoji">😐</span>
+                <span>Neutral</span>
+            </button>
+            <button class="rate-btn rate-dislike" onclick="rateGame('dislike')">
+                <span class="rate-emoji">👎</span>
+                <span>Dislike</span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Compare{% endblock %}
+
+{% block content %}
+<div class="compare-container">
+    <div class="compare-header">
+        <h1>Which game is better?</h1>
+        <p class="compare-subtitle">Click on the game you prefer</p>
+        <div class="compare-progress">
+            <span class="progress-label">~{{ remaining }} comparison{{ 's' if remaining != 1 else '' }} remaining</span>
+        </div>
+    </div>
+
+    <div class="compare-arena">
+        <!-- New Game (Left) — clicking = "new game is better" -->
+        <div class="compare-card compare-new clickable" onclick="submitComparison('better')" id="cardNew">
+            <div class="compare-label">New Game</div>
+            <div class="compare-cover">
+                {% if new_game.cover_url %}
+                <img src="{{ new_game.cover_url }}" alt="{{ new_game.name }}">
+                {% else %}
+                <div class="no-cover large">🎮</div>
+                {% endif %}
+            </div>
+            <h2>{{ new_game.name }}</h2>
+            <p class="compare-meta">
+                {% if new_game.release_year %}{{ new_game.release_year }}{% endif %}
+                {% if new_game.platforms %} · {{ new_game.platforms }}{% endif %}
+            </p>
+        </div>
+
+        <div class="compare-vs">VS</div>
+
+        <!-- Existing Game (Right) — clicking = "existing game is better" (new is worse) -->
+        <div class="compare-card compare-existing clickable" onclick="submitComparison('worse')" id="cardExisting">
+            <div class="compare-label">Ranked #{{ existing_game.rank_position }} in {{ tier|capitalize }}d</div>
+            <div class="compare-cover">
+                {% if existing_game.cover_url %}
+                <img src="{{ existing_game.cover_url }}" alt="{{ existing_game.name }}">
+                {% else %}
+                <div class="no-cover large">🎮</div>
+                {% endif %}
+            </div>
+            <h2>{{ existing_game.name }}</h2>
+            <p class="compare-meta">
+                {% if existing_game.release_year %}{{ existing_game.release_year }}{% endif %}
+                {% if existing_game.platforms %} · {{ existing_game.platforms }}{% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
