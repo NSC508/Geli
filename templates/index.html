@@ -3,12 +3,14 @@
 
 {% block content %}
 <div class="rankings-header">
-    <h1>Your Game Rankings</h1>
+    <h1>Your {{ media_config.singular }} Rankings</h1>
     <p class="rankings-subtitle">
         {% if total == 0 %}
-        No games ranked yet. <a href="{{ url_for('search_page') }}">Add your first game!</a>
-        {% elif total < 10 %} {{ total }} game{{ 's' if total !=1 else '' }} ranked — add {{ 10 - total }} more to
-            unlock scores! {% else %} {{ total }} games ranked {% endif %} </p>
+        No {{ media_config.label|lower }} ranked yet. <a href="{{ url_for('search_page', media_type=media_type) }}">Add
+            your first {{ media_config.singular|lower }}!</a>
+        {% elif total < 10 %} {{ total }} {{ media_config.singular|lower }}{{ 's' if total !=1 else '' }} ranked — add
+            {{ 10 - total }} more to unlock scores! {% else %} {{ total }} {{ media_config.label|lower }} ranked {%
+            endif %} </p>
 </div>
 
 {% if total > 0 %}
@@ -21,29 +23,29 @@
     </div>
     <div class="games-list">
         {% set ns = namespace(rank=1) %}
-        {% for game in all_games %}
-        <div class="game-card" data-igdb-id="{{ game.igdb_id }}">
+        {% for item in all_items %}
+        <div class="game-card" data-external-id="{{ item.external_id }}">
             <div class="game-rank">#{{ ns.rank }}</div>
             {% set ns.rank = ns.rank + 1 %}
             <div class="game-cover">
-                {% if game.cover_url %}
-                <img src="{{ game.cover_url }}" alt="{{ game.name }}" loading="lazy">
+                {% if item.cover_url %}
+                <img src="{{ item.cover_url }}" alt="{{ item.name }}" loading="lazy">
                 {% else %}
-                <div class="no-cover">🎮</div>
+                <div class="no-cover">{{ media_config.emoji }}</div>
                 {% endif %}
             </div>
             <div class="game-info">
-                <h3 class="game-title">{{ game.name }}</h3>
+                <h3 class="game-title">{{ item.name }}</h3>
                 <span class="game-meta">
-                    {% if game.release_year %}{{ game.release_year }}{% endif %}
-                    {% if game.platforms %} · {{ game.platforms }}{% endif %}
+                    {% if item.release_year %}{{ item.release_year }}{% endif %}
+                    {% if item.meta_line %} · {{ item.meta_line }}{% endif %}
                 </span>
             </div>
-            <span class="tier-badge tier-badge-{{ game.tier }}">
-                {% if game.tier == 'like' %}🔥{% elif game.tier == 'neutral' %}😐{% else %}👎{% endif %}
+            <span class="tier-badge tier-badge-{{ item.tier }}">
+                {% if item.tier == 'like' %}🔥{% elif item.tier == 'neutral' %}😐{% else %}👎{% endif %}
             </span>
             {% if show_scores %}
-            <div class="game-score score-{{ game.tier }}">{{ "%.1f"|format(game.score) }}</div>
+            <div class="game-score score-{{ item.tier }}">{{ "%.1f"|format(item.score) }}</div>
             {% endif %}
         </div>
         {% endfor %}
@@ -60,32 +62,32 @@
             {% if show_scores %}<span class="tier-range">7.0 – 10.0</span>{% endif %}
         </div>
         <div class="games-list">
-            {% for game in liked %}
-            <div class="game-card" data-igdb-id="{{ game.igdb_id }}">
-                <div class="game-rank">#{{ game.rank_position }}</div>
+            {% for item in liked %}
+            <div class="game-card" data-external-id="{{ item.external_id }}">
+                <div class="game-rank">#{{ item.rank_position }}</div>
                 <div class="game-cover">
-                    {% if game.cover_url %}
-                    <img src="{{ game.cover_url }}" alt="{{ game.name }}" loading="lazy">
+                    {% if item.cover_url %}
+                    <img src="{{ item.cover_url }}" alt="{{ item.name }}" loading="lazy">
                     {% else %}
-                    <div class="no-cover">🎮</div>
+                    <div class="no-cover">{{ media_config.emoji }}</div>
                     {% endif %}
                 </div>
                 <div class="game-info">
-                    <h3 class="game-title">{{ game.name }}</h3>
+                    <h3 class="game-title">{{ item.name }}</h3>
                     <span class="game-meta">
-                        {% if game.release_year %}{{ game.release_year }}{% endif %}
-                        {% if game.platforms %} · {{ game.platforms }}{% endif %}
+                        {% if item.release_year %}{{ item.release_year }}{% endif %}
+                        {% if item.meta_line %} · {{ item.meta_line }}{% endif %}
                     </span>
                 </div>
                 {% if show_scores %}
-                <div class="game-score score-like">{{ "%.1f"|format(game.score) }}</div>
+                <div class="game-score score-like">{{ "%.1f"|format(item.score) }}</div>
                 {% endif %}
-                <button class="remove-btn" onclick="removeGame({{ game.igdb_id }}, '{{ game.name|e }}')"
+                <button class="remove-btn" onclick="removeItem('{{ item.external_id }}', '{{ item.name|e }}')"
                     title="Remove">×</button>
             </div>
             {% endfor %}
             {% if liked|length == 0 %}
-            <div class="empty-tier">No liked games yet</div>
+            <div class="empty-tier">No liked {{ media_config.label|lower }} yet</div>
             {% endif %}
         </div>
     </div>
@@ -99,32 +101,32 @@
             {% if show_scores %}<span class="tier-range">4.0 – 7.0</span>{% endif %}
         </div>
         <div class="games-list">
-            {% for game in neutral %}
-            <div class="game-card" data-igdb-id="{{ game.igdb_id }}">
-                <div class="game-rank">#{{ game.rank_position }}</div>
+            {% for item in neutral %}
+            <div class="game-card" data-external-id="{{ item.external_id }}">
+                <div class="game-rank">#{{ item.rank_position }}</div>
                 <div class="game-cover">
-                    {% if game.cover_url %}
-                    <img src="{{ game.cover_url }}" alt="{{ game.name }}" loading="lazy">
+                    {% if item.cover_url %}
+                    <img src="{{ item.cover_url }}" alt="{{ item.name }}" loading="lazy">
                     {% else %}
-                    <div class="no-cover">🎮</div>
+                    <div class="no-cover">{{ media_config.emoji }}</div>
                     {% endif %}
                 </div>
                 <div class="game-info">
-                    <h3 class="game-title">{{ game.name }}</h3>
+                    <h3 class="game-title">{{ item.name }}</h3>
                     <span class="game-meta">
-                        {% if game.release_year %}{{ game.release_year }}{% endif %}
-                        {% if game.platforms %} · {{ game.platforms }}{% endif %}
+                        {% if item.release_year %}{{ item.release_year }}{% endif %}
+                        {% if item.meta_line %} · {{ item.meta_line }}{% endif %}
                     </span>
                 </div>
                 {% if show_scores %}
-                <div class="game-score score-neutral">{{ "%.1f"|format(game.score) }}</div>
+                <div class="game-score score-neutral">{{ "%.1f"|format(item.score) }}</div>
                 {% endif %}
-                <button class="remove-btn" onclick="removeGame({{ game.igdb_id }}, '{{ game.name|e }}')"
+                <button class="remove-btn" onclick="removeItem('{{ item.external_id }}', '{{ item.name|e }}')"
                     title="Remove">×</button>
             </div>
             {% endfor %}
             {% if neutral|length == 0 %}
-            <div class="empty-tier">No neutral games yet</div>
+            <div class="empty-tier">No neutral {{ media_config.label|lower }} yet</div>
             {% endif %}
         </div>
     </div>
@@ -138,42 +140,43 @@
             {% if show_scores %}<span class="tier-range">1.0 – 4.0</span>{% endif %}
         </div>
         <div class="games-list">
-            {% for game in disliked %}
-            <div class="game-card" data-igdb-id="{{ game.igdb_id }}">
-                <div class="game-rank">#{{ game.rank_position }}</div>
+            {% for item in disliked %}
+            <div class="game-card" data-external-id="{{ item.external_id }}">
+                <div class="game-rank">#{{ item.rank_position }}</div>
                 <div class="game-cover">
-                    {% if game.cover_url %}
-                    <img src="{{ game.cover_url }}" alt="{{ game.name }}" loading="lazy">
+                    {% if item.cover_url %}
+                    <img src="{{ item.cover_url }}" alt="{{ item.name }}" loading="lazy">
                     {% else %}
-                    <div class="no-cover">🎮</div>
+                    <div class="no-cover">{{ media_config.emoji }}</div>
                     {% endif %}
                 </div>
                 <div class="game-info">
-                    <h3 class="game-title">{{ game.name }}</h3>
+                    <h3 class="game-title">{{ item.name }}</h3>
                     <span class="game-meta">
-                        {% if game.release_year %}{{ game.release_year }}{% endif %}
-                        {% if game.platforms %} · {{ game.platforms }}{% endif %}
+                        {% if item.release_year %}{{ item.release_year }}{% endif %}
+                        {% if item.meta_line %} · {{ item.meta_line }}{% endif %}
                     </span>
                 </div>
                 {% if show_scores %}
-                <div class="game-score score-dislike">{{ "%.1f"|format(game.score) }}</div>
+                <div class="game-score score-dislike">{{ "%.1f"|format(item.score) }}</div>
                 {% endif %}
-                <button class="remove-btn" onclick="removeGame({{ game.igdb_id }}, '{{ game.name|e }}')"
+                <button class="remove-btn" onclick="removeItem('{{ item.external_id }}', '{{ item.name|e }}')"
                     title="Remove">×</button>
             </div>
             {% endfor %}
             {% if disliked|length == 0 %}
-            <div class="empty-tier">No disliked games yet</div>
+            <div class="empty-tier">No disliked {{ media_config.label|lower }} yet</div>
             {% endif %}
         </div>
     </div>
 </div>
 {% else %}
 <div class="empty-state">
-    <div class="empty-icon">🎮</div>
-    <h2>Start Rating Games</h2>
-    <p>Search for a game and tell us how you feel about it.</p>
-    <a href="{{ url_for('search_page') }}" class="btn btn-primary">Add Your First Game</a>
+    <div class="empty-icon">{{ media_config.emoji }}</div>
+    <h2>Start Rating {{ media_config.label }}</h2>
+    <p>Search for a {{ media_config.singular|lower }} and tell us how you feel about it.</p>
+    <a href="{{ url_for('search_page', media_type=media_type) }}" class="btn btn-primary">Add Your First {{
+        media_config.singular }}</a>
 </div>
 {% endif %}
 {% endblock %}

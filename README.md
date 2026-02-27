@@ -1,6 +1,6 @@
-# 🎮 Geli — Video Game Ranking App
+# 🎮📚🎬📺 Geli — Multi-Media Ranking App
 
-**Geli** is a personal video game ranking app inspired by the [Beli](https://beliapp.com/) restaurant-rating experience. Search for any game, rate it as **Like**, **Neutral**, or **Dislike**, then stack-rank it against your other games through quick pairwise comparisons. Once you've ranked at least 10 games, Geli automatically calculates a **1–10 score** for every title on your list.
+**Geli** is a personal ranking app inspired by the [Beli](https://beliapp.com/) restaurant-rating experience. Search for any **video game**, **book**, **movie**, or **TV show**, rate it as **Like**, **Neutral**, or **Dislike**, then stack-rank it against your other picks through quick pairwise comparisons. Once you've ranked at least 10 items in a category, Geli automatically calculates a **1–10 score** for every title on your list.
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![Flask](https://img.shields.io/badge/Flask-3.x-lightgrey?logo=flask)
@@ -13,12 +13,14 @@
 
 | Feature | Description |
 |---|---|
-| 🔍 **Game Search** | Search the IGDB database for any video game — with cover art, genres, platforms, and release year |
-| 👍👎 **Tier Rating** | Classify every game as **Like**, **Neutral**, or **Dislike** |
-| ⚖️ **Pairwise Comparison** | Binary-search-based comparison flow to precisely rank a new game within its tier |
-| 📊 **Automatic Scoring** | Once you hit 10+ games, scores from 1.0 – 10.0 are calculated per tier (Liked: 7–10, Neutral: 4–7, Disliked: 1–4) |
-| 🗑️ **Remove Games** | Changed your mind? Remove any game from your rankings |
-| 🌙 **Dark Glassmorphism UI** | A sleek, modern dark-themed interface with glass effects and smooth animations |
+| 🎮📚🎬📺 **Multi-Media** | Rank video games, books, movies, and TV shows — each with their own standalone experience |
+| 🔍 **Search** | Search across IGDB (games), Open Library (books), and TMDB (movies & TV) |
+| 👍👎 **Tier Rating** | Classify every item as **Like**, **Neutral**, or **Dislike** |
+| ⚖️ **Pairwise Comparison** | Binary-search-based comparison flow to precisely rank within tiers |
+| 📊 **Automatic Scoring** | Once you hit 10+ items, scores from 1.0 – 10.0 are calculated per tier |
+| 🗑️ **Remove Items** | Remove any item from your rankings |
+| 🌙 **Dark Glassmorphism UI** | A sleek, modern dark-themed interface with per-media accent colors |
+| 🔄 **Media Switcher** | Click the Geli logo to switch between media types |
 
 ---
 
@@ -28,7 +30,10 @@
 |---|---|---|
 | **Python** | 3.11+ | Tested on 3.11 via Conda |
 | **pip** or **Conda** | any | For installing Python packages |
-| **Twitch/IGDB API Credentials** | — | Free to obtain (see [below](#-igdb-api-credentials)) |
+| **Twitch/IGDB API Credentials** | — | Free (for games — see [below](#-igdb-api-credentials)) |
+| **TMDB API Key** | — | Free (for movies & TV — see [below](#-tmdb-api-key)) |
+
+> 💡 **Books** use the Open Library API which requires **no API key**.
 
 ---
 
@@ -71,9 +76,9 @@ pip install flask requests
 
 </details>
 
-### 3. Obtain IGDB API Credentials
+### 3. Obtain API Credentials
 
-Geli uses the **IGDB API** (powered by Twitch) to search for game data. You'll need a free Twitch developer account:
+#### 🎮 IGDB API Credentials (for Games)
 
 1. Go to the [Twitch Developer Console](https://dev.twitch.tv/console).
 2. Log in (or create a free Twitch account).
@@ -86,6 +91,13 @@ Geli uses the **IGDB API** (powered by Twitch) to search for game data. You'll n
 6. Copy your **Client ID**.
 7. Click **New Secret** and copy the **Client Secret**.
 
+#### 🎬📺 TMDB API Key (for Movies & TV Shows)
+
+1. Go to [TMDB](https://www.themoviedb.org/) and create a free account.
+2. Go to **Settings** → **API** → **Request an API Key**.
+3. Select **Developer**, accept the terms, and fill in the application details.
+4. Copy your **API Key (v3 auth)**.
+
 ### 4. Configure Credentials
 
 Choose **one** of the two methods below. **Environment variables** are recommended because they keep secrets out of files entirely.
@@ -96,6 +108,7 @@ Choose **one** of the two methods below. **Environment variables** are recommend
 ```bash
 export IGDB_CLIENT_ID="your_client_id_here"
 export IGDB_CLIENT_SECRET="your_client_secret_here"
+export TMDB_API_KEY="your_tmdb_api_key_here"
 ```
 
 > 💡 **Tip:** Add these lines to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.) so they persist across sessions.
@@ -109,16 +122,17 @@ export IGDB_CLIENT_SECRET="your_client_secret_here"
 cp creds.example.json creds.json
 ```
 
-Then edit `creds.json` and replace the placeholder values with your real credentials:
+Then edit `creds.json` and replace the placeholder values:
 
 ```json
 {
-    "client_id": "your_client_id_here",
-    "client_secret": "your_client_secret_here"
+    "client_id": "your_twitch_client_id_here",
+    "client_secret": "your_twitch_client_secret_here",
+    "tmdb_api_key": "your_tmdb_api_key_here"
 }
 ```
 
-> ⚠️ **Important:** `creds.json` is listed in `.gitignore` and will **never** be committed to Git. Do not rename or remove it from `.gitignore`.
+> ⚠️ **Important:** `creds.json` is listed in `.gitignore` and will **never** be committed to Git.
 
 </details>
 
@@ -134,12 +148,13 @@ The app will start on **http://localhost:5000**. Open this URL in your browser.
 
 ## 🎯 How to Use
 
-1. **Add Games** — Click **+ Add Game** in the navbar and search for a game.
-2. **Rate It** — Click a search result and choose **Like**, **Neutral**, or **Dislike**.
-3. **Compare** — If there are other games in the same tier, you'll be asked a series of "Which do you prefer?" comparisons to place the new game precisely.
-4. **View Rankings** — The home page shows your full ranked list, split by tier.
-5. **Scores Unlock at 10 Games** — Once you've ranked 10+ games, numerical scores (1.0–10.0) appear automatically.
-6. **Remove** — Click the ✕ button on any game card to remove it from your rankings.
+1. **Switch Media** — Click the **Geli logo** in the navbar to switch between Games, Books, Movies, and TV Shows.
+2. **Add Items** — Click **+ Add Game/Book/Movie/Show** in the navbar and search.
+3. **Rate It** — Click a search result and choose **Like**, **Neutral**, or **Dislike**.
+4. **Compare** — If there are other items in the same tier, you'll be asked "Which is better?" comparisons.
+5. **View Rankings** — The home page shows your full ranked list, split by tier.
+6. **Scores Unlock at 10 Items** — Once you've ranked 10+ items in a media type, numerical scores appear.
+7. **Remove** — Click the ✕ button on any card to remove it from your rankings.
 
 ---
 
@@ -147,21 +162,23 @@ The app will start on **http://localhost:5000**. Open this URL in your browser.
 
 ```
 Geli/
-├── app.py               # Flask application — routes & API endpoints
-├── igdb_client.py       # IGDB / Twitch API client with auto-token refresh
-├── models.py            # SQLite data layer (game storage & ranking)
-├── ranking.py           # Binary insertion ranking algorithm & score calculation
+├── app.py                  # Flask application — multi-media routes & API endpoints
+├── igdb_client.py          # IGDB / Twitch API client (games)
+├── openlibrary_client.py   # Open Library API client (books)
+├── tmdb_client.py          # TMDB API client (movies & TV shows)
+├── models.py               # SQLite data layer with media_type support
+├── ranking.py              # Binary insertion ranking algorithm & score calculation
 ├── static/
-│   ├── style.css        # Dark glassmorphism theme
-│   └── app.js           # Client-side search, rating modal, comparison logic
+│   ├── style.css           # Dark glassmorphism theme with per-media accents
+│   └── app.js              # Client-side search, rating, comparison, media switcher
 ├── templates/
-│   ├── base.html        # Base layout with navbar
-│   ├── index.html       # Rankings page
-│   ├── search.html      # Game search & rating page
-│   └── compare.html     # Pairwise comparison page
-├── creds.example.json   # Template for API credentials
-├── .gitignore           # Keeps secrets & DB out of version control
-└── README.md            # You are here!
+│   ├── base.html           # Base layout with navbar & media switcher dropdown
+│   ├── index.html          # Rankings page (adaptive to media type)
+│   ├── search.html         # Search & rating page (adaptive to media type)
+│   └── compare.html        # Pairwise comparison page (adaptive to media type)
+├── creds.example.json      # Template for API credentials
+├── .gitignore              # Keeps secrets & DB out of version control
+└── README.md               # You are here!
 ```
 
 ---
@@ -170,9 +187,12 @@ Geli/
 
 | Variable / File | Purpose | Required |
 |---|---|---|
-| `IGDB_CLIENT_ID` | Twitch / IGDB client ID | Yes (env var **or** `creds.json`) |
-| `IGDB_CLIENT_SECRET` | Twitch / IGDB client secret | Yes (env var **or** `creds.json`) |
-| `creds.json` | Alternative file-based credential store | No (fallback if env vars are unset) |
+| `IGDB_CLIENT_ID` | Twitch / IGDB client ID | Yes for games (env var **or** `creds.json`) |
+| `IGDB_CLIENT_SECRET` | Twitch / IGDB client secret | Yes for games (env var **or** `creds.json`) |
+| `TMDB_API_KEY` | TMDB v3 API key | Yes for movies & TV (env var **or** `creds.json`) |
+| `creds.json` | File-based credential store | No (fallback if env vars are unset) |
+
+> 💡 **Books** use Open Library which requires **no credentials** at all.
 
 ---
 
@@ -197,4 +217,6 @@ This project is open source and available under the [MIT License](LICENSE).
 ## 🙏 Acknowledgements
 
 - Game data provided by [IGDB](https://www.igdb.com/) via the Twitch API
+- Book data provided by [Open Library](https://openlibrary.org/)
+- Movie & TV data provided by [TMDB](https://www.themoviedb.org/)
 - Inspired by [Beli](https://beliapp.com/)

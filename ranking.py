@@ -10,27 +10,27 @@ TIER_RANGES = {
 }
 
 
-def get_comparison_state(tier):
-    """Initialize binary search state for a new game being inserted into a tier.
+def get_comparison_state(media_type, tier):
+    """Initialize binary search state for a new item being inserted into a tier.
     Returns dict with low, high for the binary search bounds.
     If tier is empty, returns None (no comparison needed).
     """
-    tier_count = models.count_games_in_tier(tier)
+    tier_count = models.count_items_in_tier(media_type, tier)
     if tier_count == 0:
-        return None  # First game in tier, just insert at position 1
+        return None  # First item in tier, just insert at position 1
     return {
         "low": 1,
         "high": tier_count,
     }
 
 
-def get_comparison_target(tier, low, high):
-    """Return the game at the midpoint of [low, high] for the next comparison.
-    Returns (mid_position, game_dict).
+def get_comparison_target(media_type, tier, low, high):
+    """Return the item at the midpoint of [low, high] for the next comparison.
+    Returns (mid_position, item_dict).
     """
     mid = (low + high) // 2
-    game = models.get_game_at_rank(tier, mid)
-    return mid, game
+    item = models.get_item_at_rank(media_type, tier, mid)
+    return mid, item
 
 
 def process_comparison(answer, low, high, mid):
@@ -39,10 +39,10 @@ def process_comparison(answer, low, high, mid):
     - If insert_position is not None, the search is complete.
     """
     if answer == "better":
-        # New game is better than mid — search upper half (lower rank numbers = better)
+        # New item is better than mid — search upper half (lower rank numbers = better)
         new_high = mid - 1
     else:
-        # New game is worse than mid — search lower half
+        # New item is worse than mid — search lower half
         new_low = mid + 1
 
     if answer == "better":
@@ -59,39 +59,39 @@ def process_comparison(answer, low, high, mid):
         return new_low, new_high, None
 
 
-def insert_game(game_data, tier, position):
-    """Insert a game at the given position in the tier, shifting others down."""
-    models.shift_ranks_down(tier, position)
-    models.add_game(game_data, tier, position)
+def insert_item(item_data, media_type, tier, position):
+    """Insert an item at the given position in the tier, shifting others down."""
+    models.shift_ranks_down(media_type, tier, position)
+    models.add_item(item_data, media_type, tier, position)
 
 
-def calculate_scores(games_list):
-    """Calculate scores for all games based on tier-based ranges.
+def calculate_scores(items_list):
+    """Calculate scores for all items based on tier-based ranges.
 
-    Scores are only assigned when total games >= 10.
+    Scores are only assigned when total items >= 10.
     Within each tier, scores are evenly distributed across the tier's range.
     Rank 1 (best) in a tier gets the max score for that tier.
     """
-    total = len(games_list)
+    total = len(items_list)
     if total < 10:
-        return games_list  # No scores yet
+        return items_list  # No scores yet
 
-    for game in games_list:
-        tier = game["tier"]
+    for item in items_list:
+        tier = item["tier"]
         score_min, score_max = TIER_RANGES[tier]
-        # Get all games in this tier to know count
-        tier_games = [g for g in games_list if g["tier"] == tier]
-        tier_count = len(tier_games)
+        # Get all items in this tier to know count
+        tier_items = [i for i in items_list if i["tier"] == tier]
+        tier_count = len(tier_items)
 
         if tier_count == 1:
-            # Only game in tier gets midpoint
-            game["score"] = round((score_min + score_max) / 2, 1)
+            # Only item in tier gets midpoint
+            item["score"] = round((score_min + score_max) / 2, 1)
         else:
             # Position 1 = best = max score, last position = min score
-            rank = game["rank_position"]
-            game["score"] = round(
+            rank = item["rank_position"]
+            item["score"] = round(
                 score_max - ((rank - 1) / (tier_count - 1)) * (score_max - score_min),
                 1,
             )
 
-    return games_list
+    return items_list

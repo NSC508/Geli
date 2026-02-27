@@ -4,47 +4,47 @@
 {% block content %}
 <div class="compare-container">
     <div class="compare-header">
-        <h1>Which game is better?</h1>
-        <p class="compare-subtitle">Click on the game you prefer</p>
+        <h1>Which {{ media_config.singular|lower }} is better?</h1>
+        <p class="compare-subtitle">Click on the one you prefer</p>
         <div class="compare-progress">
             <span class="progress-label">~{{ remaining }} comparison{{ 's' if remaining != 1 else '' }} remaining</span>
         </div>
     </div>
 
     <div class="compare-arena">
-        <!-- New Game (Left) — clicking = "new game is better" -->
+        <!-- New Item (Left) — clicking = "new item is better" -->
         <div class="compare-card compare-new clickable" onclick="submitComparison('better')" id="cardNew">
-            <div class="compare-label">New Game</div>
+            <div class="compare-label">New {{ media_config.singular }}</div>
             <div class="compare-cover">
-                {% if new_game.cover_url %}
-                <img src="{{ new_game.cover_url }}" alt="{{ new_game.name }}">
+                {% if new_item.cover_url %}
+                <img src="{{ new_item.cover_url }}" alt="{{ new_item.name }}">
                 {% else %}
-                <div class="no-cover large">🎮</div>
+                <div class="no-cover large">{{ media_config.emoji }}</div>
                 {% endif %}
             </div>
-            <h2>{{ new_game.name }}</h2>
+            <h2>{{ new_item.name }}</h2>
             <p class="compare-meta">
-                {% if new_game.release_year %}{{ new_game.release_year }}{% endif %}
-                {% if new_game.platforms %} · {{ new_game.platforms }}{% endif %}
+                {% if new_item.release_year %}{{ new_item.release_year }}{% endif %}
+                {% if new_item.meta_line %} · {{ new_item.meta_line }}{% endif %}
             </p>
         </div>
 
         <div class="compare-vs">VS</div>
 
-        <!-- Existing Game (Right) — clicking = "existing game is better" (new is worse) -->
+        <!-- Existing Item (Right) — clicking = "existing item is better" (new is worse) -->
         <div class="compare-card compare-existing clickable" onclick="submitComparison('worse')" id="cardExisting">
-            <div class="compare-label">Ranked #{{ existing_game.rank_position }} in {{ tier|capitalize }}d</div>
+            <div class="compare-label">Ranked #{{ existing_item.rank_position }} in {{ tier|capitalize }}d</div>
             <div class="compare-cover">
-                {% if existing_game.cover_url %}
-                <img src="{{ existing_game.cover_url }}" alt="{{ existing_game.name }}">
+                {% if existing_item.cover_url %}
+                <img src="{{ existing_item.cover_url }}" alt="{{ existing_item.name }}">
                 {% else %}
-                <div class="no-cover large">🎮</div>
+                <div class="no-cover large">{{ media_config.emoji }}</div>
                 {% endif %}
             </div>
-            <h2>{{ existing_game.name }}</h2>
+            <h2>{{ existing_item.name }}</h2>
             <p class="compare-meta">
-                {% if existing_game.release_year %}{{ existing_game.release_year }}{% endif %}
-                {% if existing_game.platforms %} · {{ existing_game.platforms }}{% endif %}
+                {% if existing_item.release_year %}{{ existing_item.release_year }}{% endif %}
+                {% if existing_item.meta_line %} · {{ existing_item.meta_line }}{% endif %}
             </p>
         </div>
     </div>

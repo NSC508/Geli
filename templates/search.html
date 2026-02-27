@@ -3,9 +3,9 @@
 
 {% block content %}
 <div class="search-container">
-    <h1>Find a Game</h1>
+    <h1>Find a {{ media_config.singular }}</h1>
     <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Search for a video game..." autocomplete="off" autofocus>
+        <input type="text" id="searchInput" placeholder="{{ media_config.search_hint }}" autocomplete="off" autofocus>
         <div class="search-spinner" id="searchSpinner"></div>
     </div>
 
@@ -24,17 +24,17 @@
                 <p id="modalSummary" class="modal-summary"></p>
             </div>
         </div>
-        <h3 class="rate-prompt">How do you feel about this game?</h3>
+        <h3 class="rate-prompt">How do you feel about this {{ media_config.singular|lower }}?</h3>
         <div class="rating-buttons">
-            <button class="rate-btn rate-like" onclick="rateGame('like')">
+            <button class="rate-btn rate-like" onclick="rateItem('like')">
                 <span class="rate-emoji">🔥</span>
                 <span>Like</span>
             </button>
-            <button class="rate-btn rate-neutral" onclick="rateGame('neutral')">
+            <button class="rate-btn rate-neutral" onclick="rateItem('neutral')">
                 <span class="rate-emoji">😐</span>
                 <span>Neutral</span>
             </button>
-            <button class="rate-btn rate-dislike" onclick="rateGame('dislike')">
+            <button class="rate-btn rate-dislike" onclick="rateItem('dislike')">
                 <span class="rate-emoji">👎</span>
                 <span>Dislike</span>
             </button>

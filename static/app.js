@@ -1,9 +1,37 @@
 /* ═══════════════════════════════════════════════════
-   Geli — Client-side JavaScript
+   Geli — Client-side JavaScript (Multi-Media)
    ═══════════════════════════════════════════════════ */
 
+const mediaType = document.body.dataset.mediaType || 'games';
 let searchTimeout = null;
-let selectedGame = null;
+let selectedItem = null;
+
+const MEDIA_EMOJI = {
+    games: '🎮',
+    books: '📚',
+    movies: '🎬',
+    tv: '📺',
+};
+
+// ── Media Switcher Dropdown ──────────────────────────
+
+const mediaToggle = document.getElementById('mediaToggle');
+const mediaDropdown = document.getElementById('mediaDropdown');
+
+if (mediaToggle && mediaDropdown) {
+    mediaToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        mediaDropdown.classList.toggle('open');
+    });
+
+    document.addEventListener('click', () => {
+        mediaDropdown.classList.remove('open');
+    });
+
+    mediaDropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+}
 
 // ── Search Page Logic ────────────────────────────────
 
@@ -25,37 +53,39 @@ if (searchInput) {
 
         searchTimeout = setTimeout(async () => {
             try {
-                const resp = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-                const games = await resp.json();
+                const resp = await fetch(`/${mediaType}/api/search?q=${encodeURIComponent(query)}`);
+                const items = await resp.json();
                 spinner.classList.remove('active');
 
-                if (games.error) {
-                    resultsDiv.innerHTML = `<div class="no-results">Error: ${games.error}</div>`;
+                if (items.error) {
+                    resultsDiv.innerHTML = `<div class="no-results">Error: ${items.error}</div>`;
                     return;
                 }
 
-                if (games.length === 0) {
-                    resultsDiv.innerHTML = '<div class="no-results">No games found. Try a different search.</div>';
+                if (items.length === 0) {
+                    resultsDiv.innerHTML = '<div class="no-results">No results found. Try a different search.</div>';
                     return;
                 }
 
-                resultsDiv.innerHTML = games.map(game => `
-                    <div class="search-result-card ${game.already_ranked ? 'already-ranked' : ''}"
-                         onclick="${game.already_ranked ? '' : `openRatingModal(${escapeAttr(JSON.stringify(game))})`}">
+                const emoji = MEDIA_EMOJI[mediaType] || '🎮';
+
+                resultsDiv.innerHTML = items.map(item => `
+                    <div class="search-result-card ${item.already_ranked ? 'already-ranked' : ''}"
+                         onclick="${item.already_ranked ? '' : `openRatingModal(${escapeAttr(JSON.stringify(item))})`}">
                         <div class="search-result-cover">
-                            ${game.cover_url
-                        ? `<img src="${game.cover_url}" alt="${escapeHtml(game.name)}" loading="lazy">`
-                        : '<div class="no-cover">🎮</div>'}
+                            ${item.cover_url
+                        ? `<img src="${item.cover_url}" alt="${escapeHtml(item.name)}" loading="lazy">`
+                        : `<div class="no-cover">${emoji}</div>`}
                         </div>
                         <div class="search-result-info">
-                            <div class="search-result-title">${escapeHtml(game.name)}</div>
+                            <div class="search-result-title">${escapeHtml(item.name)}</div>
                             <div class="search-result-meta">
-                                ${game.release_year ? game.release_year : ''}
-                                ${game.platforms ? ' · ' + escapeHtml(game.platforms) : ''}
-                                ${game.genres ? ' · ' + escapeHtml(game.genres) : ''}
+                                ${item.release_year ? item.release_year : ''}
+                                ${item.meta_line ? ' · ' + escapeHtml(item.meta_line) : ''}
+                                ${item.genres ? ' · ' + escapeHtml(item.genres) : ''}
                             </div>
                         </div>
-                        ${game.already_ranked
+                        ${item.already_ranked
                         ? '<span class="search-result-badge">Already Ranked</span>'
                         : '<span class="search-result-badge">+ Rate</span>'}
                     </div>
@@ -70,45 +100,45 @@ if (searchInput) {
 
 // ── Rating Modal ─────────────────────────────────────
 
-function openRatingModal(game) {
-    selectedGame = game;
+function openRatingModal(item) {
+    selectedItem = item;
     const modal = document.getElementById('ratingModal');
     const cover = document.getElementById('modalCover');
     const title = document.getElementById('modalTitle');
     const meta = document.getElementById('modalMeta');
     const summary = document.getElementById('modalSummary');
 
-    cover.src = game.cover_url || '';
-    cover.style.display = game.cover_url ? 'block' : 'none';
-    title.textContent = game.name;
+    cover.src = item.cover_url || '';
+    cover.style.display = item.cover_url ? 'block' : 'none';
+    title.textContent = item.name;
 
     let metaText = '';
-    if (game.release_year) metaText += game.release_year;
-    if (game.platforms) metaText += ' · ' + game.platforms;
-    if (game.genres) metaText += ' · ' + game.genres;
+    if (item.release_year) metaText += item.release_year;
+    if (item.meta_line) metaText += ' · ' + item.meta_line;
+    if (item.genres) metaText += ' · ' + item.genres;
     meta.textContent = metaText;
 
-    summary.textContent = game.summary || '';
+    summary.textContent = item.summary || '';
 
     modal.style.display = 'flex';
 }
 
 function closeModal() {
     document.getElementById('ratingModal').style.display = 'none';
-    selectedGame = null;
+    selectedItem = null;
 }
 
-async function rateGame(tier) {
-    if (!selectedGame) return;
+async function rateItem(tier) {
+    if (!selectedItem) return;
 
     // Disable buttons during request
     document.querySelectorAll('.rate-btn').forEach(btn => btn.disabled = true);
 
     try {
-        const resp = await fetch('/api/rate', {
+        const resp = await fetch(`/${mediaType}/api/rate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ game: selectedGame, tier: tier }),
+            body: JSON.stringify({ item: selectedItem, tier: tier }),
         });
         const data = await resp.json();
 
@@ -121,7 +151,7 @@ async function rateGame(tier) {
         closeModal();
         window.location.href = data.redirect;
     } catch (err) {
-        showToast('Failed to rate game. Please try again.');
+        showToast('Failed to rate. Please try again.');
         document.querySelectorAll('.rate-btn').forEach(btn => btn.disabled = false);
     }
 }
@@ -141,7 +171,7 @@ async function submitComparison(answer) {
     });
 
     try {
-        const resp = await fetch('/api/compare', {
+        const resp = await fetch(`/${mediaType}/api/compare`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ answer: answer }),
@@ -167,16 +197,16 @@ async function submitComparison(answer) {
     }
 }
 
-// ── Remove Game ──────────────────────────────────────
+// ── Remove Item ──────────────────────────────────────
 
-async function removeGame(igdbId, name) {
+async function removeItem(externalId, name) {
     if (!confirm(`Remove "${name}" from your rankings?`)) return;
 
     try {
-        const resp = await fetch('/api/remove', {
+        const resp = await fetch(`/${mediaType}/api/remove`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ igdb_id: igdbId }),
+            body: JSON.stringify({ external_id: externalId }),
         });
         const data = await resp.json();
 
@@ -185,7 +215,7 @@ async function removeGame(igdbId, name) {
             setTimeout(() => location.reload(), 500);
         }
     } catch (err) {
-        showToast('Failed to remove game.');
+        showToast('Failed to remove.');
     }
 }
 
