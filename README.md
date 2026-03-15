@@ -146,6 +146,37 @@ The app will start on **http://localhost:5000**. Open this URL in your browser.
 
 ---
 
+## ☁️ Free Hosting and Deployment
+
+If you want to host Geli so you and your friends can use it on your own devices anywhere in the world, the application is ready for free hosting! Geli uses SQLite, which makes it incredibly simple to host.
+
+**Recommended Free Host: PythonAnywhere**
+PythonAnywhere provides excellent free tiers for hosting Flask applications that use SQLite databases.
+
+### Deploying to PythonAnywhere:
+1. Go to [PythonAnywhere](https://www.pythonanywhere.com/) and create a "Beginner" (free) account.
+2. Under the **Web** tab, click **Add a new web app**.
+3. Choose **Flask**, then select **Python 3.11** (or the latest available).
+4. For the path, the default (`/home/yourusername/mysite/flask_app.py`) is fine.
+5. Go to the **Consoles** tab and start a **Bash** console.
+6. Clone your fork or the main repository: `git clone https://github.com/NSC508/Geli.git`
+7. Install the required dependencies: `pip3 install --user flask requests werkzeug`
+8. In the **Files** tab, upload your `creds.json` file inside the cloned `Geli` directory, or use environment variables.
+9. Go back to the **Web** tab and click on the WSGI configuration file (e.g., `/var/www/yourusername_pythonanywhere_com_wsgi.py`).
+10. Update the WSGI file to point to your `Geli` directory and import your app:
+    ```python
+    import sys
+    path = '/home/yourusername/Geli'
+    if path not in sys.path:
+        sys.path.append(path)
+
+    from app import app as application
+    ```
+11. **Security Note:** In `app.py`, be sure to change `app.secret_key` to a strong, random string before deploying to keep user sessions secure!
+12. Hit **Reload** on the Web tab. Your app is now live at `yourusername.pythonanywhere.com`!
+
+---
+
 ## 🎯 How to Use
 
 1. **Switch Media** — Click the **Geli logo** in the navbar to switch between Games, Books, Movies, and TV Shows.

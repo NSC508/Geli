@@ -10,12 +10,12 @@ TIER_RANGES = {
 }
 
 
-def get_comparison_state(media_type, tier):
+def get_comparison_state(user_id, media_type, tier):
     """Initialize binary search state for a new item being inserted into a tier.
     Returns dict with low, high for the binary search bounds.
     If tier is empty, returns None (no comparison needed).
     """
-    tier_count = models.count_items_in_tier(media_type, tier)
+    tier_count = models.count_items_in_tier(user_id, media_type, tier)
     if tier_count == 0:
         return None  # First item in tier, just insert at position 1
     return {
@@ -24,12 +24,12 @@ def get_comparison_state(media_type, tier):
     }
 
 
-def get_comparison_target(media_type, tier, low, high):
+def get_comparison_target(user_id, media_type, tier, low, high):
     """Return the item at the midpoint of [low, high] for the next comparison.
     Returns (mid_position, item_dict).
     """
     mid = (low + high) // 2
-    item = models.get_item_at_rank(media_type, tier, mid)
+    item = models.get_item_at_rank(user_id, media_type, tier, mid)
     return mid, item
 
 
@@ -59,10 +59,10 @@ def process_comparison(answer, low, high, mid):
         return new_low, new_high, None
 
 
-def insert_item(item_data, media_type, tier, position):
+def insert_item(user_id, item_data, media_type, tier, position):
     """Insert an item at the given position in the tier, shifting others down."""
-    models.shift_ranks_down(media_type, tier, position)
-    models.add_item(item_data, media_type, tier, position)
+    models.shift_ranks_down(user_id, media_type, tier, position)
+    models.add_item(user_id, item_data, media_type, tier, position)
 
 
 def calculate_scores(items_list):
