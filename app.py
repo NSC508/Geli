@@ -1,6 +1,8 @@
 """Geli — Multi-Media Rating App (Flask application)."""
 import json
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 from igdb_client import IGDBClient
 from openlibrary_client import OpenLibraryClient
 from tmdb_client import TMDBClient
@@ -40,22 +42,86 @@ def ensure_db():
     models.init_db()
 
 
+# ─── Authentication Decorator ────────────────────────────────────────────────
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            if request.path.startswith(f"/{kwargs.get('media_type', 'games')}/api/"):
+                return jsonify({"error": "Unauthorized"}), 401
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# ─── Auth Routes ─────────────────────────────────────────────────────────────
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        if not username or not password:
+            flash("Username and password are required.", "error")
+            return redirect(url_for("register"))
+
+        password_hash = generate_password_hash(password)
+        if models.create_user(username, password_hash):
+            flash("Registration successful. Please log in.", "success")
+            return redirect(url_for("login"))
+        else:
+            flash("Username already exists.", "error")
+            return redirect(url_for("register"))
+
+    return render_template("register.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        user = models.get_user_by_username(username)
+        if user and check_password_hash(user["password_hash"], password):
+            session["user_id"] = user["id"]
+            session["username"] = user["username"]
+            return redirect(url_for("root"))
+        else:
+            flash("Invalid username or password.", "error")
+            return redirect(url_for("login"))
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.pop("user_id", None)
+    session.pop("username", None)
+    return redirect(url_for("login"))
+
+
 # ─── Root redirect ───────────────────────────────────────────────────────────
 
 @app.route("/")
 def root():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
     return redirect(url_for("index", media_type="games"))
 
 
 # ─── Pages ───────────────────────────────────────────────────────────────────
 
 @app.route("/<media_type>/")
+@login_required
 def index(media_type):
     """Rankings page — show all items stack-ranked with optional scores."""
     if media_type not in VALID_MEDIA_TYPES:
         return redirect(url_for("index", media_type="games"))
 
-    items = models.get_all_ranked_items(media_type)
+    items = models.get_all_ranked_items(session["user_id"], media_type)
     total = len(items)
     show_scores = total >= 10
     if show_scores:
@@ -82,6 +148,7 @@ def index(media_type):
 
 
 @app.route("/<media_type>/search")
+@login_required
 def search_page(media_type):
     """Search page for finding and rating items."""
     if media_type not in VALID_MEDIA_TYPES:
@@ -97,6 +164,7 @@ def search_page(media_type):
 
 
 @app.route("/<media_type>/compare")
+@login_required
 def compare_page(media_type):
     """Pairwise comparison page."""
     if media_type not in VALID_MEDIA_TYPES:
@@ -111,11 +179,11 @@ def compare_page(media_type):
     low = state["low"]
     high = state["high"]
 
-    mid, target_item = ranking.get_comparison_target(media_type, tier, low, high)
+    mid, target_item = ranking.get_comparison_target(session["user_id"], media_type, tier, low, high)
     state["mid"] = mid
     session["compare_state"] = state
 
-    tier_count = models.count_items_in_tier(media_type, tier)
+    tier_count = models.count_items_in_tier(session["user_id"], media_type, tier)
     import math
     remaining = max(1, int(math.log2(max(high - low + 1, 1))) + 1)
 
@@ -137,6 +205,7 @@ def compare_page(media_type):
 # ─── API Endpoints ───────────────────────────────────────────────────────────
 
 @app.route("/<media_type>/api/search")
+@login_required
 def api_search(media_type):
     """Search for items."""
     if media_type not in VALID_MEDIA_TYPES:
@@ -167,7 +236,7 @@ def api_search(media_type):
 
         # Mark items that are already ranked
         for item in results:
-            item["already_ranked"] = models.item_exists(media_type, item["external_id"])
+            item["already_ranked"] = models.item_exists(session["user_id"], media_type, item["external_id"])
 
         return jsonify(results)
     except Exception as e:
@@ -175,6 +244,7 @@ def api_search(media_type):
 
 
 @app.route("/<media_type>/api/rate", methods=["POST"])
+@login_required
 def api_rate(media_type):
     """Receive initial Like/Neutral/Dislike rating and start comparison if needed."""
     if media_type not in VALID_MEDIA_TYPES:
@@ -185,14 +255,14 @@ def api_rate(media_type):
     tier = data["tier"]
 
     # Check if item already ranked
-    if models.item_exists(media_type, item_data["external_id"]):
+    if models.item_exists(session["user_id"], media_type, item_data["external_id"]):
         return jsonify({"error": "Already ranked"}), 400
 
     # Check if comparison is needed
-    comp_state = ranking.get_comparison_state(media_type, tier)
+    comp_state = ranking.get_comparison_state(session["user_id"], media_type, tier)
     if comp_state is None:
         # First item in tier — insert directly at position 1
-        ranking.insert_item(item_data, media_type, tier, 1)
+        ranking.insert_item(session["user_id"], item_data, media_type, tier, 1)
         return jsonify({"status": "done", "redirect": url_for("index", media_type=media_type)})
 
     # Start comparison session
@@ -208,6 +278,7 @@ def api_rate(media_type):
 
 
 @app.route("/<media_type>/api/compare", methods=["POST"])
+@login_required
 def api_compare(media_type):
     """Process a comparison answer (better/worse)."""
     state = session.get("compare_state")
@@ -224,7 +295,7 @@ def api_compare(media_type):
     new_low, new_high, insert_pos = ranking.process_comparison(answer, low, high, mid)
 
     if insert_pos is not None:
-        ranking.insert_item(state["item_data"], media_type, state["tier"], insert_pos)
+        ranking.insert_item(session["user_id"], state["item_data"], media_type, state["tier"], insert_pos)
         session.pop("compare_state", None)
         return jsonify({"status": "done", "redirect": url_for("index", media_type=media_type)})
 
@@ -235,6 +306,7 @@ def api_compare(media_type):
 
 
 @app.route("/<media_type>/api/remove", methods=["POST"])
+@login_required
 def api_remove(media_type):
     """Remove an item from rankings."""
     if media_type not in VALID_MEDIA_TYPES:
@@ -242,7 +314,7 @@ def api_remove(media_type):
 
     data = request.get_json()
     external_id = data["external_id"]
-    models.remove_item(media_type, external_id)
+    models.remove_item(session["user_id"], media_type, external_id)
     return jsonify({"status": "ok"})
 
 
